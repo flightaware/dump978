@@ -27,4 +27,4 @@ format:
 	clang-format -style=file -i *.cc *.h
 
 clean:
-	rm -f *.o fec/*.o dump978-fa faup978 skyaware978
+	rm -f *.o libs/fec/*.o dump978-fa faup978 skyaware978
