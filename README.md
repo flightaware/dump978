@@ -22,7 +22,6 @@ for use by the SkyAware web map.
 $ sudo apt-get install \
   build-essential \
   debhelper \
-  dh-systemd \
   libboost-system-dev \
   libboost-program-options-dev \
   libboost-regex-dev \
