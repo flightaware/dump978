@@ -25,7 +25,6 @@ package. Please build on a machine with more memory, or add swap.
 $ sudo apt-get install \
   build-essential \
   debhelper \
-  dh-systemd \
   libboost-system-dev \
   libboost-program-options-dev \
   libboost-regex-dev \
