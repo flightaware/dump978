@@ -39,6 +39,7 @@ jobs:
       - name: Build it
         run: |
           make all
+          make faup978
       - name: Run tests
         run: |
           make test
