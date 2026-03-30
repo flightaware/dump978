@@ -159,11 +159,10 @@ namespace flightaware {
         void PurgeOld();
 
       private:
-        Tracker(boost::asio::io_service &service, std::chrono::milliseconds timeout) : service_(service), strand_(service), timer_(service), timeout_(timeout) {}
+        Tracker(boost::asio::io_service &service, std::chrono::milliseconds timeout) : strand_(service), timer_(service), timeout_(timeout) {}
 
         void HandleMessage(const AdsbMessage &message);
 
-        boost::asio::io_service &service_;
         boost::asio::io_service::strand strand_;
         boost::asio::steady_timer timer_;
         std::chrono::milliseconds timeout_;
