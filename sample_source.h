@@ -108,7 +108,7 @@ namespace flightaware {
         SampleFormat Format() override { return format_; }
 
       private:
-        StdinSampleSource(boost::asio::io_service &service, const boost::program_options::variables_map &options, std::size_t samples_per_second, std::size_t samples_per_block) : service_(service), samples_per_second_(samples_per_second), stream_(service), used_(0) {
+        StdinSampleSource(boost::asio::io_service &service, const boost::program_options::variables_map &options, std::size_t samples_per_second, std::size_t samples_per_block) : samples_per_second_(samples_per_second), stream_(service), used_(0) {
             if (!options.count("format")) {
                 throw std::runtime_error("--format must be specified when using a file input");
             }
@@ -120,7 +120,6 @@ namespace flightaware {
 
         void ScheduleRead();
 
-        boost::asio::io_service &service_;
         SampleFormat format_;
         unsigned alignment_;
         std::size_t samples_per_second_;
