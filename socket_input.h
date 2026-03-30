@@ -40,7 +40,6 @@ namespace flightaware {
         boost::optional<RawMessage> ParseMetadataLine(const std::string &line);
         void HandleError(const boost::system::error_code &ec);
 
-        boost::asio::io_service &service_;
         std::string host_;
         std::string port_or_service_;
         std::chrono::milliseconds reconnect_interval_;

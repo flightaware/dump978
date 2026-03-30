@@ -9,7 +9,7 @@ using boost::asio::ip::tcp;
 
 #include <iostream>
 
-RawInput::RawInput(boost::asio::io_service &service, const std::string &host, const std::string &port_or_service, std::chrono::milliseconds reconnect_interval) : service_(service), host_(host), port_or_service_(port_or_service), reconnect_interval_(reconnect_interval), resolver_(service), socket_(service), reconnect_timer_(service), used_(0) { readbuf_.resize(8192); }
+RawInput::RawInput(boost::asio::io_service &service, const std::string &host, const std::string &port_or_service, std::chrono::milliseconds reconnect_interval) : host_(host), port_or_service_(port_or_service), reconnect_interval_(reconnect_interval), resolver_(service), socket_(service), reconnect_timer_(service), used_(0) { readbuf_.resize(8192); }
 
 void RawInput::Start() {
     auto self(shared_from_this());
