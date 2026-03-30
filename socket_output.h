@@ -30,6 +30,8 @@ namespace flightaware::uat {
 
         bool IsOpen() const { return socket_.is_open(); }
 
+        virtual ~SocketOutput() {};
+
       protected:
         SocketOutput(boost::asio::io_service &service_, boost::asio::ip::tcp::socket &&socket_);
         std::ostringstream &Buf() { return outbuf_; }
