@@ -197,7 +197,7 @@ void Reporter::ReportOneAircraft(const Tracker::AddressKey &key, const AircraftS
 
     std::string source = value_map(aircraft.address_qualifier, source_map, "?");
 
-    auto add_slow_field = [&kv, &source, &last, force_slow](const std::string &k, const AgedFieldBase &f, std::function<void(std::ostream &)> stringize) {
+    auto add_slow_field = [&kv, &last, force_slow](const std::string &k, const AgedFieldBase &f, std::function<void(std::ostream &)> stringize) {
         if (f.Valid() && (force_slow || f.Changed() > last.report_time)) {
             std::ostringstream os;
             stringize(os);
