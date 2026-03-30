@@ -1,3 +1,9 @@
+dump978-fa (11.0~dev) UNRELEASED; urgency=medium
+
+  * in development
+
+ -- Oliver Jowett <oliver.jowett@flightaware.com>  Mon, 30 Mar 2026 20:46:17 +0800
+
 dump978-fa (10.2) stable; urgency=medium
 
   * No change release for 10.2
