@@ -9,7 +9,8 @@ extern "C" {
 #include "fec/rs.h"
 }
 
-void test_rs_decode(unsigned seed, int trials, int symsize, int gfpoly, int fcr, int prim, int nroots, int pad) {
+bool test_rs_decode(unsigned seed, int trials, int symsize, int gfpoly, int fcr, int prim, int nroots, int pad)
+{
     srand(seed);
 
     void *rs = ::init_rs_char(symsize, gfpoly, fcr, prim, nroots, pad);
@@ -17,6 +18,7 @@ void test_rs_decode(unsigned seed, int trials, int symsize, int gfpoly, int fcr,
     int NN = (1 << symsize) - 1;
     int blocklen = NN - pad;
     int datalen = blocklen - nroots;
+    bool success = true;
 
     std::vector<unsigned char> test_block(blocklen, 0);
     std::vector<unsigned char> working_block(blocklen, 0);
@@ -61,15 +63,18 @@ void test_rs_decode(unsigned seed, int trials, int symsize, int gfpoly, int fcr,
                 if (n_corrected >= 0) {
                     std::cerr << "RS(" << blocklen << "," << datalen << ") (seed: " << seed << " trial: " << trial << " errors: " << n_errors << ")"
                               << " returned success, but should have failed" << std::endl;
+                    success = false;
                 }
             } else {
                 if (n_corrected != n_errors) {
                     std::cerr << "RS(" << blocklen << "," << datalen << ") (seed: " << seed << " trial: " << trial << " errors: " << n_errors << ")"
                               << " claimed to correct " << n_corrected << " errors" << std::endl;
+                    success = false;
                 }
                 if (working_block != test_block) {
                     std::cerr << "RS(" << blocklen << "," << datalen << ") (seed: " << seed << " trial: " << trial << " errors: " << n_errors << ")"
                               << " data wasn't corrected correctly" << std::endl;
+                    success = false;
                 }
 
                 for (int i = 0; i < n_corrected; ++i) {
@@ -77,6 +82,7 @@ void test_rs_decode(unsigned seed, int trials, int symsize, int gfpoly, int fcr,
                     if (found == error_pos.end()) {
                         std::cerr << "RS(" << blocklen << "," << datalen << ") (seed: " << seed << " trial: " << trial << " errors: " << n_errors << ")"
                                   << " corrected symbol at position " << corrected_pos[i] << " which was not in error" << std::endl;
+                        success = false;
                     } else {
                         error_pos.erase(found);
                     }
@@ -88,40 +94,46 @@ void test_rs_decode(unsigned seed, int trials, int symsize, int gfpoly, int fcr,
                     for (int pos : error_pos)
                         std::cerr << pos;
                     std::cerr << "]" << std::endl;
+                    success = false;
                 }
             }
         }
     }
 
     ::free_rs_char(rs);
+    return success;
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
+    bool success = true;
 
-    test_rs_decode(/* seed */ 1,
-                   /* trials */ 10000,
-                   /* symsize */ 8,
-                   /* gfpoly */ flightaware::uat::fec::DOWNLINK_SHORT_POLY,
-                   /* fcr */ 120,
-                   /* prim */ 1,
-                   /* nroots */ flightaware::uat::fec::DOWNLINK_SHORT_ROOTS,
-                   /* pad */ flightaware::uat::fec::DOWNLINK_SHORT_PAD);
+    success = test_rs_decode(/* seed */ 1,
+                             /* trials */ 10000,
+                             /* symsize */ 8,
+                             /* gfpoly */ flightaware::uat::fec::DOWNLINK_SHORT_POLY,
+                             /* fcr */ 120,
+                             /* prim */ 1,
+                             /* nroots */ flightaware::uat::fec::DOWNLINK_SHORT_ROOTS,
+                             /* pad */ flightaware::uat::fec::DOWNLINK_SHORT_PAD) && success;
 
-    test_rs_decode(/* seed */ 1,
-                   /* trials */ 10000,
-                   /* symsize */ 8,
-                   /* gfpoly */ flightaware::uat::fec::DOWNLINK_LONG_POLY,
-                   /* fcr */ 120,
-                   /* prim */ 1,
-                   /* nroots */ flightaware::uat::fec::DOWNLINK_LONG_ROOTS,
-                   /* pad */ flightaware::uat::fec::DOWNLINK_LONG_PAD);
+    success = test_rs_decode(/* seed */ 1,
+                             /* trials */ 10000,
+                             /* symsize */ 8,
+                             /* gfpoly */ flightaware::uat::fec::DOWNLINK_LONG_POLY,
+                             /* fcr */ 120,
+                             /* prim */ 1,
+                             /* nroots */ flightaware::uat::fec::DOWNLINK_LONG_ROOTS,
+                             /* pad */ flightaware::uat::fec::DOWNLINK_LONG_PAD) && success;
 
-    test_rs_decode(/* seed */ 1,
-                   /* trials */ 10000,
-                   /* symsize */ 8,
-                   /* gfpoly */ flightaware::uat::fec::UPLINK_BLOCK_POLY,
-                   /* fcr */ 120,
-                   /* prim */ 1,
-                   /* nroots */ flightaware::uat::fec::UPLINK_BLOCK_ROOTS,
-                   /* pad */ flightaware::uat::fec::UPLINK_BLOCK_PAD);
+    success = test_rs_decode(/* seed */ 1,
+                             /* trials */ 10000,
+                             /* symsize */ 8,
+                             /* gfpoly */ flightaware::uat::fec::UPLINK_BLOCK_POLY,
+                             /* fcr */ 120,
+                             /* prim */ 1,
+                             /* nroots */ flightaware::uat::fec::UPLINK_BLOCK_ROOTS,
+                             /* pad */ flightaware::uat::fec::UPLINK_BLOCK_PAD) && success;
+
+    return success ? EXIT_SUCCESS : EXIT_FAILURE;
 }
