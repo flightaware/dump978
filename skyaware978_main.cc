@@ -42,7 +42,7 @@ void validate(boost::any &v, const std::vector<std::string> &values, connect_opt
 #define EXIT_NO_RESTART (64)
 
 static int realmain(int argc, char **argv) {
-    boost::asio::io_service io_service;
+    boost::asio::io_context io_context;
 
     // clang-format off
     po::options_description desc("Allowed options");
@@ -92,14 +92,14 @@ static int realmain(int argc, char **argv) {
 
     auto connect = opts["connect"].as<connect_option>();
     auto reconnect_interval = opts["reconnect-interval"].as<unsigned>();
-    auto input = RawInput::Create(io_service, connect.host, connect.port, std::chrono::milliseconds(reconnect_interval * 1000));
+    auto input = RawInput::Create(io_context, connect.host, connect.port, std::chrono::milliseconds(reconnect_interval * 1000));
 
-    auto tracker = Tracker::Create(io_service);
+    auto tracker = Tracker::Create(io_context);
     input->SetConsumer(std::bind(&Tracker::HandleMessages, tracker, std::placeholders::_1));
-    input->SetErrorHandler([&io_service, reconnect_interval](const boost::system::error_code &ec) {
+    input->SetErrorHandler([&io_context, reconnect_interval](const boost::system::error_code &ec) {
         std::cerr << "Connection failed: " << ec.message() << std::endl;
         if (!reconnect_interval) {
-            io_service.stop();
+            io_context.stop();
         }
     });
 
@@ -109,13 +109,13 @@ static int realmain(int argc, char **argv) {
     }
 
     auto dir = opts["json-dir"].as<std::string>();
-    auto writer = SkyAwareWriter::Create(io_service, tracker, dir, std::chrono::milliseconds(1000), opts["history-count"].as<unsigned>(), std::chrono::milliseconds(opts["history-interval"].as<unsigned>() * 1000), location);
+    auto writer = SkyAwareWriter::Create(io_context, tracker, dir, std::chrono::milliseconds(1000), opts["history-count"].as<unsigned>(), std::chrono::milliseconds(opts["history-interval"].as<unsigned>() * 1000), location);
 
     writer->Start();
     tracker->Start();
     input->Start();
 
-    io_service.run();
+    io_context.run();
 
     input->Stop();
     tracker->Stop();

@@ -7,6 +7,8 @@
 #include <iomanip>
 #include <iostream>
 
+#include <boost/asio/bind_executor.hpp>
+
 using namespace flightaware::uat;
 
 void AircraftState::UpdateFromMessage(const AdsbMessage &message) {
@@ -121,8 +123,8 @@ void Tracker::PurgeOld() {
         }
     }
     auto self(shared_from_this());
-    timer_.expires_from_now(timeout_ / 4);
-    timer_.async_wait(strand_.wrap([this, self](const boost::system::error_code &ec) {
+    timer_.expires_after(timeout_ / 4);
+    timer_.async_wait(boost::asio::bind_executor(strand_, [this, self](const boost::system::error_code &ec) {
         if (!ec) {
             PurgeOld();
         }
@@ -134,7 +136,7 @@ void Tracker::HandleMessages(SharedMessageVector messages) {
     const std::uint64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - unix_epoch).count();
 
     auto self(shared_from_this());
-    strand_.dispatch([this, self, now, messages]() {
+    boost::asio::dispatch(strand_, [this, self, now, messages]() {
         const std::uint64_t PAST_FUZZ = 15000;
         const std::uint64_t FUTURE_FUZZ = 1000;
 

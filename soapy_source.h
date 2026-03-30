@@ -19,7 +19,7 @@ namespace flightaware {
   namespace uat {
     class SoapySampleSource : public SampleSource {
       public:
-        static SampleSource::Pointer Create(boost::asio::io_service &service, const std::string &device_name, const boost::program_options::variables_map &options) { return Pointer(new SoapySampleSource(service, device_name, options)); }
+        static SampleSource::Pointer Create(boost::asio::io_context &service, const std::string &device_name, const boost::program_options::variables_map &options) { return Pointer(new SoapySampleSource(service, device_name, options)); }
 
         virtual ~SoapySampleSource();
 
@@ -29,7 +29,7 @@ namespace flightaware {
         SampleFormat Format() override { return format_; }
 
       private:
-        SoapySampleSource(boost::asio::io_service &service, const std::string &device_name, const boost::program_options::variables_map &options);
+        SoapySampleSource(boost::asio::io_context &service, const std::string &device_name, const boost::program_options::variables_map &options);
 
         void Run();
         void Keepalive();

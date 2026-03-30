@@ -10,7 +10,7 @@
 #include <memory>
 #include <string>
 
-#include <boost/asio/io_service.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/steady_timer.hpp>
 
@@ -23,7 +23,7 @@ namespace flightaware {
         typedef std::shared_ptr<RawInput> Pointer;
         typedef std::function<void(const boost::system::error_code &)> ErrorHandler;
 
-        static Pointer Create(boost::asio::io_service &service, const std::string &host, const std::string &port_or_service, std::chrono::milliseconds reconnect_interval = std::chrono::milliseconds(0)) { return Pointer(new RawInput(service, host, port_or_service, reconnect_interval)); }
+        static Pointer Create(boost::asio::io_context &service, const std::string &host, const std::string &port_or_service, std::chrono::milliseconds reconnect_interval = std::chrono::milliseconds(0)) { return Pointer(new RawInput(service, host, port_or_service, reconnect_interval)); }
 
         void Start();
         void Stop();
@@ -31,9 +31,12 @@ namespace flightaware {
         void SetErrorHandler(ErrorHandler handler) { error_handler_ = handler; }
 
       private:
-        RawInput(boost::asio::io_service &service, const std::string &host, const std::string &port_or_service, std::chrono::milliseconds reconnect_interval);
+        RawInput(boost::asio::io_context &service, const std::string &host, const std::string &port_or_service, std::chrono::milliseconds reconnect_interval);
 
-        void TryNextEndpoint(const boost::system::error_code &last_error);
+        using resolver = boost::asio::ip::tcp::resolver;
+        void TryNextEndpoint(resolver::results_type::iterator next,
+                             resolver::results_type::iterator end,
+                             const boost::system::error_code &last_error);
         void ScheduleRead();
         void ParseBuffer();
         boost::optional<RawMessage> ParseLine(const std::string &line);
@@ -44,9 +47,8 @@ namespace flightaware {
         std::string port_or_service_;
         std::chrono::milliseconds reconnect_interval_;
 
-        boost::asio::ip::tcp::resolver resolver_;
+        resolver resolver_;
         boost::asio::ip::tcp::socket socket_;
-        boost::asio::ip::tcp::resolver::iterator next_endpoint_;
         boost::asio::steady_timer reconnect_timer_;
 
         ErrorHandler error_handler_;

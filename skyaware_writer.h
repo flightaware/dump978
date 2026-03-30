@@ -10,7 +10,7 @@
 #include <chrono>
 #include <memory>
 
-#include <boost/asio/io_service.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/filesystem.hpp>
@@ -24,17 +24,17 @@ namespace flightaware {
       public:
         typedef std::shared_ptr<SkyAwareWriter> Pointer;
 
-        static Pointer Create(boost::asio::io_service &service, flightaware::uat::Tracker::Pointer tracker, const boost::filesystem::path &dir, std::chrono::milliseconds interval, unsigned history_count, std::chrono::milliseconds history_interval, boost::optional<std::pair<double, double>> location) { return Pointer(new SkyAwareWriter(service, tracker, dir, interval, history_count, history_interval, location)); }
+        static Pointer Create(boost::asio::io_context &service, flightaware::uat::Tracker::Pointer tracker, const boost::filesystem::path &dir, std::chrono::milliseconds interval, unsigned history_count, std::chrono::milliseconds history_interval, boost::optional<std::pair<double, double>> location) { return Pointer(new SkyAwareWriter(service, tracker, dir, interval, history_count, history_interval, location)); }
 
         void Start();
         void Stop();
 
       private:
-        SkyAwareWriter(boost::asio::io_service &service, flightaware::uat::Tracker::Pointer tracker, const boost::filesystem::path &dir, std::chrono::milliseconds interval, unsigned history_count, std::chrono::milliseconds history_interval, boost::optional<std::pair<double, double>> location) : strand_(service), timer_(service), tracker_(tracker), dir_(dir), interval_(interval), history_count_(history_count), history_interval_(history_interval), location_(location) {}
+        SkyAwareWriter(boost::asio::io_context &service, flightaware::uat::Tracker::Pointer tracker, const boost::filesystem::path &dir, std::chrono::milliseconds interval, unsigned history_count, std::chrono::milliseconds history_interval, boost::optional<std::pair<double, double>> location) : strand_(service), timer_(service), tracker_(tracker), dir_(dir), interval_(interval), history_count_(history_count), history_interval_(history_interval), location_(location) {}
 
         void PeriodicWrite();
 
-        boost::asio::io_service::strand strand_;
+        boost::asio::io_context::strand strand_;
         boost::asio::steady_timer timer_;
         flightaware::uat::Tracker::Pointer tracker_;
         boost::filesystem::path dir_;
