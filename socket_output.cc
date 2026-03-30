@@ -16,7 +16,7 @@ using boost::asio::ip::tcp;
 
 using namespace flightaware::uat;
 
-SocketOutput::SocketOutput(asio::io_service &service, tcp::socket &&socket) : service_(service), strand_(service), socket_(std::move(socket)), peer_(socket_.remote_endpoint()), flush_pending_(false) {}
+SocketOutput::SocketOutput(asio::io_service &service, tcp::socket &&socket) : strand_(service), socket_(std::move(socket)), peer_(socket_.remote_endpoint()), flush_pending_(false) {}
 
 void SocketOutput::Start() { ReadAndDiscard(); }
 

@@ -44,7 +44,6 @@ namespace flightaware {
         void Flush();
         void ReadAndDiscard();
 
-        boost::asio::io_service &service_;
         boost::asio::io_service::strand strand_;
         boost::asio::ip::tcp::socket socket_;
         boost::asio::ip::tcp::endpoint peer_;
