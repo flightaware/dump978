@@ -27,7 +27,7 @@ test: fec_tests
 	./fec_tests
 
 fec_tests: fec_tests.o libs/fec/init_rs_char.o libs/fec/decode_rs_char.o libs/fec/encode_rs_char.o
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ -o $@
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ -o $@ -lstdc++
 
 format:
 	clang-format -style=file -i *.cc *.h
