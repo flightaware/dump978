@@ -49,7 +49,6 @@ namespace flightaware {
         // how long to wait between scheduling reads (to reduce the spinning on short messages)
         const std::chrono::milliseconds read_interval = std::chrono::milliseconds(50);
 
-        boost::asio::io_service &io_service_;
         std::string path_;
         boost::asio::serial_port port_;
         boost::asio::steady_timer read_timer_;

@@ -34,7 +34,7 @@ enum class StratuxSerial::ParserState {
     MESSAGE   // reading rssi / timestamp / payload
 };
 
-StratuxSerial::StratuxSerial(boost::asio::io_service &io_service, const std::string &path) : io_service_(io_service), path_(path), port_(io_service), read_timer_(io_service), parser_state_(ParserState::PREAMBLE), preamble_index_(0) {}
+StratuxSerial::StratuxSerial(boost::asio::io_service &io_service, const std::string &path) : path_(path), port_(io_service), read_timer_(io_service), parser_state_(ParserState::PREAMBLE), preamble_index_(0) {}
 
 void StratuxSerial::Start() {
     try {
