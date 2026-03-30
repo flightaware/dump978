@@ -17,7 +17,8 @@
 #include "common.h"
 #include "uat_protocol.h"
 
-namespace flightaware::uat {
+namespace flightaware {
+  namespace uat {
     class RawMessage {
       public:
         using MetadataMap = std::map<std::string, std::string>;
@@ -296,6 +297,7 @@ namespace flightaware::uat {
         void DecodeMS(const RawMessage &raw);
         void DecodeAUXSV(const RawMessage &raw);
     };
-} // namespace flightaware::uat
+  }; // namespace flightaware::uat
+};   // namespace flightaware
 
 #endif

@@ -21,7 +21,8 @@
 #include "common.h"
 #include "convert.h"
 
-namespace flightaware::uat {
+namespace flightaware {
+  namespace uat {
     class SampleSource : public std::enable_shared_from_this<SampleSource> {
       public:
         typedef std::shared_ptr<SampleSource> Pointer;
@@ -127,6 +128,7 @@ namespace flightaware::uat {
         Bytes block_;
         std::size_t used_;
     };
-}; // namespace flightaware::uat
+  }; // namespace flightaware::uat
+};   // namespace flightaware
 
 #endif

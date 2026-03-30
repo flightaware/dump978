@@ -17,7 +17,8 @@
 #include "message_dispatch.h"
 #include "uat_message.h"
 
-namespace flightaware::uat {
+namespace flightaware {
+  namespace uat {
     class SocketOutput : public std::enable_shared_from_this<SocketOutput> {
       public:
         typedef std::shared_ptr<SocketOutput> Pointer;
@@ -106,6 +107,7 @@ namespace flightaware::uat {
         MessageDispatch &dispatch_;
         ConnectionFactory factory_;
     };
-}; // namespace flightaware::uat
+  }; // namespace flightaware::uat
+};   // namespace flightaware
 
 #endif

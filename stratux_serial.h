@@ -22,7 +22,8 @@
 #include "fec.h"
 #include "message_source.h"
 
-namespace flightaware::uat {
+namespace flightaware {
+  namespace uat {
     class StratuxSerial : public MessageSource, public std::enable_shared_from_this<StratuxSerial> {
       public:
         typedef std::shared_ptr<StratuxSerial> Pointer;
@@ -62,6 +63,7 @@ namespace flightaware::uat {
         Bytes message_;
         std::uint64_t message_start_timestamp_;
     };
-}; // namespace flightaware::uat
+  }; // namespace flightaware::uat
+};   // namespace flightaware
 
 #endif

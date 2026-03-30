@@ -11,7 +11,8 @@
 
 #include "common.h"
 
-namespace flightaware::uat {
+namespace flightaware {
+  namespace uat {
     // Deinterleaving and error-correction of UAT messages.
     // This delegates to the "fec" library (in fec/) for the actual Reed-Solomon
     // error-correction work.
@@ -48,6 +49,7 @@ namespace flightaware::uat {
         void *rs_downlink_short_;
         void *rs_downlink_long_;
     };
-}; // namespace flightaware::uat
+  }; // namespace flightaware::uat
+};   // namespace flightaware
 
 #endif

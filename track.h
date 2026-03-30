@@ -18,7 +18,8 @@
 
 #include "uat_message.h"
 
-namespace flightaware::uat {
+namespace flightaware {
+  namespace uat {
     class AgedFieldBase {
       public:
         operator bool() const { return Valid(); }
@@ -169,6 +170,7 @@ namespace flightaware::uat {
         MapType aircraft_;
         std::uint32_t total_messages_ = 0;
     };
-}; // namespace flightaware::uat
+  }; // namespace flightaware::uat
+};   // namespace flightaware
 
 #endif

@@ -14,7 +14,8 @@
 
 #include "uat_message.h"
 
-namespace flightaware::uat {
+namespace flightaware {
+  namespace uat {
     class MessageDispatch {
       public:
         typedef unsigned Handle;
@@ -44,6 +45,7 @@ namespace flightaware::uat {
 
         std::map<Handle, Client> clients_;
     };
-}; // namespace flightaware::uat
+  }; // namespace flightaware::uat
+};   // namespace flightaware
 
 #endif

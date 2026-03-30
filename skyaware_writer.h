@@ -18,7 +18,8 @@
 #include "track.h"
 #include "uat_message.h"
 
-namespace flightaware::skyaware {
+namespace flightaware {
+  namespace skyaware {
     class SkyAwareWriter : public std::enable_shared_from_this<SkyAwareWriter> {
       public:
         typedef std::shared_ptr<SkyAwareWriter> Pointer;
@@ -45,6 +46,7 @@ namespace flightaware::skyaware {
         unsigned next_history_index_ = 0;
         std::uint64_t next_history_time_ = 0;
     };
-} // namespace flightaware::skyaware
+  }; // namespace flightaware::skyaware
+};   // namespace flightaware
 
 #endif

@@ -11,7 +11,8 @@
 
 #include "uat_message.h"
 
-namespace flightaware::uat {
+namespace flightaware {
+  namespace uat {
     class MessageSource {
       public:
         typedef std::shared_ptr<MessageSource> Pointer;
@@ -43,6 +44,7 @@ namespace flightaware::uat {
         Consumer consumer_;
         ErrorHandler error_handler_;
     };
-}; // namespace flightaware::uat
+  }; // namespace flightaware::uat
+};   // namespace flightaware
 
 #endif

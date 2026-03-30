@@ -12,7 +12,8 @@
 
 #include "common.h"
 
-namespace flightaware::uat {
+namespace flightaware {
+  namespace uat {
     // Describes a sample data layout:
     //   CU8   - interleaved I/Q data, 8 bit unsigned integers
     //   CS8_  - interleaved I/Q data, 8 bit signed integers
@@ -119,6 +120,7 @@ namespace flightaware::uat {
         void ConvertPhase(Bytes::const_iterator begin, Bytes::const_iterator end, PhaseBuffer::iterator out) override;
         void ConvertMagSq(Bytes::const_iterator begin, Bytes::const_iterator end, std::vector<double>::iterator out) override;
     };
-}; // namespace flightaware::uat
+  }; // namespace flightaware::uat
+};   // namespace flightaware
 
 #endif
