@@ -16,7 +16,8 @@
 
 #include "message_source.h"
 
-namespace flightaware::uat {
+namespace flightaware {
+  namespace uat {
     class RawInput : public MessageSource, public std::enable_shared_from_this<RawInput> {
       public:
         typedef std::shared_ptr<RawInput> Pointer;
@@ -39,7 +40,6 @@ namespace flightaware::uat {
         boost::optional<RawMessage> ParseMetadataLine(const std::string &line);
         void HandleError(const boost::system::error_code &ec);
 
-        boost::asio::io_service &service_;
         std::string host_;
         std::string port_or_service_;
         std::chrono::milliseconds reconnect_interval_;
@@ -54,6 +54,7 @@ namespace flightaware::uat {
         std::vector<char> readbuf_;
         std::size_t used_;
     };
-}; // namespace flightaware::uat
+  }; // namespace flightaware::uat
+};   // namespace flightaware
 
 #endif

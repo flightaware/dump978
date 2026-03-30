@@ -18,7 +18,8 @@
 #include "track.h"
 #include "uat_message.h"
 
-namespace flightaware::skyaware {
+namespace flightaware {
+  namespace skyaware {
     class SkyAwareWriter : public std::enable_shared_from_this<SkyAwareWriter> {
       public:
         typedef std::shared_ptr<SkyAwareWriter> Pointer;
@@ -29,11 +30,10 @@ namespace flightaware::skyaware {
         void Stop();
 
       private:
-        SkyAwareWriter(boost::asio::io_service &service, flightaware::uat::Tracker::Pointer tracker, const boost::filesystem::path &dir, std::chrono::milliseconds interval, unsigned history_count, std::chrono::milliseconds history_interval, boost::optional<std::pair<double, double>> location) : service_(service), strand_(service), timer_(service), tracker_(tracker), dir_(dir), interval_(interval), history_count_(history_count), history_interval_(history_interval), location_(location) {}
+        SkyAwareWriter(boost::asio::io_service &service, flightaware::uat::Tracker::Pointer tracker, const boost::filesystem::path &dir, std::chrono::milliseconds interval, unsigned history_count, std::chrono::milliseconds history_interval, boost::optional<std::pair<double, double>> location) : strand_(service), timer_(service), tracker_(tracker), dir_(dir), interval_(interval), history_count_(history_count), history_interval_(history_interval), location_(location) {}
 
         void PeriodicWrite();
 
-        boost::asio::io_service &service_;
         boost::asio::io_service::strand strand_;
         boost::asio::steady_timer timer_;
         flightaware::uat::Tracker::Pointer tracker_;
@@ -45,6 +45,7 @@ namespace flightaware::skyaware {
         unsigned next_history_index_ = 0;
         std::uint64_t next_history_time_ = 0;
     };
-} // namespace flightaware::skyaware
+  }; // namespace flightaware::skyaware
+};   // namespace flightaware
 
 #endif

@@ -16,7 +16,8 @@
 #include <cstdint>
 #include <vector>
 
-namespace flightaware::uat {
+namespace flightaware {
+  namespace uat {
     typedef std::vector<std::uint8_t> Bytes;
     typedef std::vector<std::uint16_t> PhaseBuffer;
 
@@ -28,6 +29,7 @@ namespace flightaware::uat {
     const auto unix_epoch = std::chrono::system_clock::from_time_t(0);
 
     inline static std::uint64_t now_millis() { return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - unix_epoch).count(); }
-}; // namespace flightaware::uat
+  }; // namespace flightaware::uat
+};   // namespace flightaware
 
 #endif

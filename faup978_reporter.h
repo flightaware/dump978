@@ -17,7 +17,8 @@
 #include "track.h"
 #include "uat_message.h"
 
-namespace flightaware::faup978 {
+namespace flightaware {
+  namespace faup978 {
     struct ReportState {
         std::uint64_t slow_report_time = 0;
         std::uint64_t report_time = 0;
@@ -57,6 +58,7 @@ namespace flightaware::faup978 {
         std::map<flightaware::uat::Tracker::AddressKey, ReportState> reported_;
         bool fecfix_ = false;
     };
-} // namespace flightaware::faup978
+  }; // namespace flightaware::faup978
+};   // namespace flightaware
 
 #endif

@@ -9,7 +9,8 @@
 
 #include <cstdint>
 
-namespace flightaware::uat {
+namespace flightaware {
+  namespace uat {
     enum class MessageType { DOWNLINK_SHORT, DOWNLINK_LONG, UPLINK, METADATA, INVALID };
 
     const unsigned SYNC_BITS = 36;
@@ -49,7 +50,8 @@ namespace flightaware::uat {
         const int DOWNLINK_SHORT_PAD = 255 - DOWNLINK_SHORT_BYTES;
         const int DOWNLINK_LONG_PAD = 255 - DOWNLINK_LONG_BYTES;
         const int UPLINK_BLOCK_PAD = 255 - UPLINK_BLOCK_BYTES;
-    }; // namespace fec
-};     // namespace flightaware::uat
+    }; // namespace flightaware::uat::fec
+  }; // namespace flightaware::uat
+};   // namespace flightaware
 
 #endif

@@ -16,7 +16,8 @@
 #include "message_source.h"
 #include "uat_message.h"
 
-namespace flightaware::uat {
+namespace flightaware {
+  namespace uat {
     class Demodulator {
       public:
         // Return value of Demodulate
@@ -69,7 +70,7 @@ namespace flightaware::uat {
 
         PhaseBuffer phase_;
     };
-
-}; // namespace flightaware::uat
+  }; // namespace flightaware::uat
+};   // namespace flightaware
 
 #endif

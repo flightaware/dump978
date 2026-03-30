@@ -18,7 +18,8 @@
 
 #include "uat_message.h"
 
-namespace flightaware::uat {
+namespace flightaware {
+  namespace uat {
     class AgedFieldBase {
       public:
         operator bool() const { return Valid(); }
@@ -158,17 +159,17 @@ namespace flightaware::uat {
         void PurgeOld();
 
       private:
-        Tracker(boost::asio::io_service &service, std::chrono::milliseconds timeout) : service_(service), strand_(service), timer_(service), timeout_(timeout) {}
+        Tracker(boost::asio::io_service &service, std::chrono::milliseconds timeout) : strand_(service), timer_(service), timeout_(timeout) {}
 
         void HandleMessage(const AdsbMessage &message);
 
-        boost::asio::io_service &service_;
         boost::asio::io_service::strand strand_;
         boost::asio::steady_timer timer_;
         std::chrono::milliseconds timeout_;
         MapType aircraft_;
         std::uint32_t total_messages_ = 0;
     };
-}; // namespace flightaware::uat
+  }; // namespace flightaware::uat
+};   // namespace flightaware
 
 #endif

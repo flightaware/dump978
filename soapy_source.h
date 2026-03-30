@@ -15,7 +15,8 @@
 
 #include "sample_source.h"
 
-namespace flightaware::uat {
+namespace flightaware {
+  namespace uat {
     class SoapySampleSource : public SampleSource {
       public:
         static SampleSource::Pointer Create(boost::asio::io_service &service, const std::string &device_name, const boost::program_options::variables_map &options) { return Pointer(new SoapySampleSource(service, device_name, options)); }
@@ -45,6 +46,7 @@ namespace flightaware::uat {
 
         static std::atomic_bool log_handler_registered_;
     };
-}; // namespace flightaware::uat
+  }; // namespace flightaware::uat
+};   // namespace flightaware
 
 #endif

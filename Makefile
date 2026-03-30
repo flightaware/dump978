@@ -9,7 +9,7 @@ CFLAGS += -Wall -Werror -O2 -g -Ilibs
 CXX ?= g++
 CXXFLAGS += -std=c++11 -Wall -Wno-psabi -Werror -O2 -g -Ilibs
 
-LIBS=-lboost_system -lboost_program_options -lboost_regex -lboost_filesystem -lpthread
+LIBS=-lboost_system -lboost_program_options -lboost_regex -lboost_filesystem -lpthread -lstdc++ -lm
 LIBS_SDR=-lSoapySDR
 
 all: dump978-fa skyaware978
@@ -27,7 +27,7 @@ test: fec_tests
 	./fec_tests
 
 fec_tests: fec_tests.o libs/fec/init_rs_char.o libs/fec/decode_rs_char.o libs/fec/encode_rs_char.o
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ -o $@
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ -o $@ -lstdc++
 
 format:
 	clang-format -style=file -i *.cc *.h

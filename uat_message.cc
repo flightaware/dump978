@@ -432,7 +432,8 @@ void AdsbMessage::DecodeAUXSV(const RawMessage &raw) {
 // converting decoded messages to json
 //
 
-namespace flightaware::uat {
+namespace flightaware {
+  namespace uat {
     // clang-format off
 
     NLOHMANN_JSON_SERIALIZE_ENUM(AddressQualifier, {
@@ -485,7 +486,8 @@ namespace flightaware::uat {
     });
 
     // clang-format on
-}; // namespace flightaware::uat
+  }; // namespace flightaware::uat
+}; // namespace flightaware
 
 nlohmann::json AdsbMessage::ToJson() const {
     nlohmann::json o;

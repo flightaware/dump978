@@ -9,12 +9,14 @@
 
 #include <stdexcept>
 
-namespace flightaware::uat {
+namespace flightaware {
+  namespace uat {
     class config_error : public std::runtime_error {
       public:
         explicit config_error(const std::string &what_arg) : runtime_error(what_arg) {}
         explicit config_error(const char *what_arg) : runtime_error(what_arg) {}
     };
-}; // namespace flightaware::uat
+  }; // namespace flightaware::uat
+};   // namespace flightaware
 
 #endif

@@ -51,7 +51,8 @@ void validate(boost::any &v, const std::vector<std::string> &values, listen_opti
 }
 
 // Specializations of validate for --format
-namespace flightaware::uat {
+namespace flightaware {
+  namespace uat {
     void validate(boost::any &v, const std::vector<std::string> &values, SampleFormat *target_type, int) {
         po::validators::check_first_occurrence(v);
         const std::string &s = po::validators::get_single_string(values);
@@ -71,7 +72,8 @@ namespace flightaware::uat {
 
         v = boost::any(entry->second);
     }
-} // namespace flightaware::uat
+  } // namespace flightaware::uat
+} // namespace flightaware
 
 #define EXIT_NO_RESTART (64)
 

@@ -22,7 +22,8 @@
 #include "fec.h"
 #include "message_source.h"
 
-namespace flightaware::uat {
+namespace flightaware {
+  namespace uat {
     class StratuxSerial : public MessageSource, public std::enable_shared_from_this<StratuxSerial> {
       public:
         typedef std::shared_ptr<StratuxSerial> Pointer;
@@ -48,7 +49,6 @@ namespace flightaware::uat {
         // how long to wait between scheduling reads (to reduce the spinning on short messages)
         const std::chrono::milliseconds read_interval = std::chrono::milliseconds(50);
 
-        boost::asio::io_service &io_service_;
         std::string path_;
         boost::asio::serial_port port_;
         boost::asio::steady_timer read_timer_;
@@ -62,6 +62,7 @@ namespace flightaware::uat {
         Bytes message_;
         std::uint64_t message_start_timestamp_;
     };
-}; // namespace flightaware::uat
+  }; // namespace flightaware::uat
+};   // namespace flightaware
 
 #endif

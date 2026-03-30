@@ -172,15 +172,6 @@ void CS8Converter::ConvertMagSq(Bytes::const_iterator begin, Bytes::const_iterat
     }
 }
 
-static inline std::int16_t PhaseDifference(std::uint16_t from, std::uint16_t to) {
-    int32_t difference = to - from; // lies in the range -65535 .. +65535
-    if (difference >= 32768)        //   +32768..+65535
-        return difference - 65536;  //   -> -32768..-1: always in range
-    else if (difference < -32768)   //   -65535..-32769
-        return difference + 65536;  //   -> +1..32767: always in range
-    else
-        return difference;
-}
 CS16HConverter::CS16HConverter() : SampleConverter(SampleFormat::CS16H) {
     // atan lookup, positive values only, 8-bit fixed point covering 0.0 .. 256.0
     for (std::size_t i = 0; i < lookup_atan_.size(); ++i) {

@@ -17,7 +17,8 @@
 #include "message_dispatch.h"
 #include "uat_message.h"
 
-namespace flightaware::uat {
+namespace flightaware {
+  namespace uat {
     class SocketOutput : public std::enable_shared_from_this<SocketOutput> {
       public:
         typedef std::shared_ptr<SocketOutput> Pointer;
@@ -30,6 +31,8 @@ namespace flightaware::uat {
 
         bool IsOpen() const { return socket_.is_open(); }
 
+        virtual ~SocketOutput() {};
+
       protected:
         SocketOutput(boost::asio::io_service &service_, boost::asio::ip::tcp::socket &&socket_);
         std::ostringstream &Buf() { return outbuf_; }
@@ -41,7 +44,6 @@ namespace flightaware::uat {
         void Flush();
         void ReadAndDiscard();
 
-        boost::asio::io_service &service_;
         boost::asio::io_service::strand strand_;
         boost::asio::ip::tcp::socket socket_;
         boost::asio::ip::tcp::endpoint peer_;
@@ -104,6 +106,7 @@ namespace flightaware::uat {
         MessageDispatch &dispatch_;
         ConnectionFactory factory_;
     };
-}; // namespace flightaware::uat
+  }; // namespace flightaware::uat
+};   // namespace flightaware
 
 #endif
