@@ -23,6 +23,9 @@ faup978: faup978_main.o socket_input.o uat_message.o track.o faup978_reporter.o
 skyaware978: skyaware978_main.o socket_input.o uat_message.o track.o skyaware_writer.o
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ -o $@ $(LIBS)
 
+test: fec_tests
+	./fec_tests
+
 fec_tests: fec_tests.o libs/fec/init_rs_char.o libs/fec/decode_rs_char.o libs/fec/encode_rs_char.o
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ -o $@
 
