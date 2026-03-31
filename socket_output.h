@@ -10,7 +10,7 @@
 #include <memory>
 #include <sstream>
 
-#include <boost/asio/io_service.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/strand.hpp>
 
@@ -34,7 +34,7 @@ namespace flightaware {
         virtual ~SocketOutput() {};
 
       protected:
-        SocketOutput(boost::asio::io_service &service_, boost::asio::ip::tcp::socket &&socket_);
+        SocketOutput(boost::asio::io_context &service_, boost::asio::ip::tcp::socket &&socket_);
         std::ostringstream &Buf() { return outbuf_; }
 
         virtual void InternalWrite(SharedMessageVector messages) = 0;
@@ -44,7 +44,7 @@ namespace flightaware {
         void Flush();
         void ReadAndDiscard();
 
-        boost::asio::io_service::strand strand_;
+        boost::asio::io_context::strand strand_;
         boost::asio::ip::tcp::socket socket_;
         boost::asio::ip::tcp::endpoint peer_;
 
@@ -57,7 +57,7 @@ namespace flightaware {
     class RawOutput : public SocketOutput {
       public:
         // factory method, this class must always be constructed via make_shared
-        static Pointer Create(boost::asio::io_service &service, boost::asio::ip::tcp::socket &&socket, SharedMessageVector header) { return Pointer(new RawOutput(service, std::move(socket), header)); }
+        static Pointer Create(boost::asio::io_context &service, boost::asio::ip::tcp::socket &&socket, SharedMessageVector header) { return Pointer(new RawOutput(service, std::move(socket), header)); }
 
         void Start() override;
 
@@ -65,7 +65,7 @@ namespace flightaware {
         void InternalWrite(SharedMessageVector messages) override;
 
       private:
-        RawOutput(boost::asio::io_service &service_, boost::asio::ip::tcp::socket &&socket_, SharedMessageVector header) : SocketOutput(service_, std::move(socket_)) { header_ = header; }
+        RawOutput(boost::asio::io_context &service_, boost::asio::ip::tcp::socket &&socket_, SharedMessageVector header) : SocketOutput(service_, std::move(socket_)) { header_ = header; }
 
         SharedMessageVector header_;
     };
@@ -73,32 +73,32 @@ namespace flightaware {
     class JsonOutput : public SocketOutput {
       public:
         // factory method, this class must always be constructed via make_shared
-        static Pointer Create(boost::asio::io_service &service, boost::asio::ip::tcp::socket &&socket) { return Pointer(new JsonOutput(service, std::move(socket))); }
+        static Pointer Create(boost::asio::io_context &service, boost::asio::ip::tcp::socket &&socket) { return Pointer(new JsonOutput(service, std::move(socket))); }
 
       protected:
         void InternalWrite(SharedMessageVector messages) override;
 
       private:
-        JsonOutput(boost::asio::io_service &service_, boost::asio::ip::tcp::socket &&socket_) : SocketOutput(service_, std::move(socket_)) {}
+        JsonOutput(boost::asio::io_context &service_, boost::asio::ip::tcp::socket &&socket_) : SocketOutput(service_, std::move(socket_)) {}
     };
 
     class SocketListener : public std::enable_shared_from_this<SocketListener> {
       public:
         typedef std::shared_ptr<SocketListener> Pointer;
-        typedef std::function<SocketOutput::Pointer(boost::asio::io_service &, boost::asio::ip::tcp::socket &&)> ConnectionFactory;
+        typedef std::function<SocketOutput::Pointer(boost::asio::io_context &, boost::asio::ip::tcp::socket &&)> ConnectionFactory;
 
         // factory method, this class must always be constructed via make_shared
-        static Pointer Create(boost::asio::io_service &service, const boost::asio::ip::tcp::endpoint &endpoint, MessageDispatch &dispatch, ConnectionFactory factory) { return Pointer(new SocketListener(service, endpoint, dispatch, factory)); }
+        static Pointer Create(boost::asio::io_context &service, const boost::asio::ip::tcp::endpoint &endpoint, MessageDispatch &dispatch, ConnectionFactory factory) { return Pointer(new SocketListener(service, endpoint, dispatch, factory)); }
 
         void Start();
         void Close();
 
       private:
-        SocketListener(boost::asio::io_service &service, const boost::asio::ip::tcp::endpoint &endpoint, MessageDispatch &dispatch, ConnectionFactory factory);
+        SocketListener(boost::asio::io_context &service, const boost::asio::ip::tcp::endpoint &endpoint, MessageDispatch &dispatch, ConnectionFactory factory);
 
         void Accept();
 
-        boost::asio::io_service &service_;
+        boost::asio::io_context &service_;
         boost::asio::ip::tcp::acceptor acceptor_;
         boost::asio::ip::tcp::endpoint endpoint_;
         boost::asio::ip::tcp::socket socket_;

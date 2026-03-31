@@ -78,7 +78,7 @@ namespace flightaware {
 #define EXIT_NO_RESTART (64)
 
 static int realmain(int argc, char **argv) {
-    boost::asio::io_service io_service;
+    boost::asio::io_context io_context;
 
     // clang-format off
     po::options_description desc("Allowed options");
@@ -130,7 +130,7 @@ static int realmain(int argc, char **argv) {
     SampleSource::Pointer sample_source;
     MessageSource::Pointer message_source;
 
-    tcp::resolver resolver(io_service);
+    tcp::resolver resolver(io_context);
 
     if (opts.count("stdin") + opts.count("file") + opts.count("sdr") + opts.count("stratuxv3") != 1) {
         std::cerr << "Exactly one of --stdin, --file, --sdr, or --stratuxv3 must be used" << std::endl;
@@ -138,16 +138,16 @@ static int realmain(int argc, char **argv) {
     }
 
     if (opts.count("stdin")) {
-        sample_source = StdinSampleSource::Create(io_service, opts);
+        sample_source = StdinSampleSource::Create(io_context, opts);
     } else if (opts.count("file")) {
         boost::filesystem::path path(opts["file"].as<std::string>());
-        sample_source = FileSampleSource::Create(io_service, path, opts);
+        sample_source = FileSampleSource::Create(io_context, path, opts);
     } else if (opts.count("sdr")) {
         auto device = opts["sdr"].as<std::string>();
-        sample_source = SoapySampleSource::Create(io_service, device, opts);
+        sample_source = SoapySampleSource::Create(io_context, device, opts);
     } else if (opts.count("stratuxv3")) {
         auto path = opts["stratuxv3"].as<std::string>();
-        message_source = StratuxSerial::Create(io_service, path);
+        message_source = StratuxSerial::Create(io_context, path);
     } else {
         assert("impossible case" && false);
     }
@@ -159,27 +159,29 @@ static int realmain(int argc, char **argv) {
 
         bool ok = true;
         for (auto l : opts[option].as<std::vector<listen_option>>()) {
-            tcp::resolver::query query(l.host, l.port, tcp::resolver::query::passive);
             boost::system::error_code ec;
+            auto range = resolver.resolve(tcp::v4(), l.host, l.port, tcp::resolver::passive);
+            if (!ec) {
+                bool success = false;
+                for (auto i = range.begin(); i != range.end(); ++i) {
+                    const auto &endpoint = i->endpoint();
 
-            bool success = false;
-            tcp::resolver::iterator end;
-            for (auto i = resolver.resolve(query, ec); i != end; ++i) {
-                const auto &endpoint = i->endpoint();
-
-                try {
-                    auto listener = SocketListener::Create(io_service, endpoint, dispatch, factory);
-                    listener->Start();
-                    std::cerr << option << ": listening for connections on " << endpoint << std::endl;
-                    success = true;
-                } catch (boost::system::system_error &err) {
-                    std::cerr << option << ": could not listen on " << endpoint << ": " << err.what() << std::endl;
-                    ec = err.code();
+                    try {
+                        auto listener = SocketListener::Create(io_context, endpoint, dispatch, factory);
+                        listener->Start();
+                        std::cerr << option << ": listening for connections on " << endpoint << std::endl;
+                        success = true;
+                    } catch (boost::system::system_error &err) {
+                        std::cerr << option << ": could not listen on " << endpoint << ": " << err.what() << std::endl;
+                        ec = err.code();
+                    }
                 }
-            }
-
-            if (!success) {
-                std::cerr << option << ": no available listening addresses" << std::endl;
+                if (!success) {
+                    std::cerr << option << ": no available listening addresses" << std::endl;
+                    ok = false;
+                }
+            } else {
+                std::cerr << option << ": failed to resolve " << l.host << ":" << l.port << ": " << ec.message() << std::endl;
                 ok = false;
             }
         }
@@ -247,21 +249,21 @@ static int realmain(int argc, char **argv) {
     }
 
     message_source->SetConsumer(std::bind(&MessageDispatch::Dispatch, &dispatch, std::placeholders::_1));
-    message_source->SetErrorHandler([&io_service, &saw_error](const boost::system::error_code &ec) {
+    message_source->SetErrorHandler([&io_context, &saw_error](const boost::system::error_code &ec) {
         if (ec == boost::asio::error::eof) {
             std::cerr << "Message source reports EOF" << std::endl;
         } else {
             std::cerr << "Message source reports error: " << ec.message() << std::endl;
             saw_error = true;
         }
-        io_service.stop();
+        io_context.stop();
     });
 
-    boost::asio::signal_set signals(io_service, SIGINT, SIGTERM);
-    signals.async_wait([&io_service, &saw_error](const boost::system::error_code &ec, int signum) {
+    boost::asio::signal_set signals(io_context, SIGINT, SIGTERM);
+    signals.async_wait([&io_context, &saw_error](const boost::system::error_code &ec, int signum) {
         std::cerr << "Caught signal " << signum << ", exiting" << std::endl;
         saw_error = true;
-        io_service.stop();
+        io_context.stop();
     });
 
     message_source->Start();
@@ -269,7 +271,7 @@ static int realmain(int argc, char **argv) {
         sample_source->Start();
     }
 
-    io_service.run();
+    io_context.run();
 
     if (sample_source) {
         sample_source->Stop();

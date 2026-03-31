@@ -4,6 +4,8 @@
 
 #include "sample_source.h"
 
+#include <boost/asio/post.hpp>
+
 #include <chrono>
 #include <iostream>
 
@@ -22,7 +24,8 @@ void FileSampleSource::Start() {
     timestamp_ = 1; // always use synthetic timestamps for file sources
 
     auto self = std::static_pointer_cast<FileSampleSource>(shared_from_this());
-    service_.post(std::bind(&FileSampleSource::ReadBlock, self, boost::system::error_code()));
+    boost::asio::post(service_,
+                      std::bind(&FileSampleSource::ReadBlock, self, boost::system::error_code()));
 }
 
 void FileSampleSource::Stop() {
@@ -77,7 +80,8 @@ void FileSampleSource::ReadBlock(const boost::system::error_code &ec) {
         timer_.expires_at(next_block_);
         timer_.async_wait(std::bind(&FileSampleSource::ReadBlock, self, std::placeholders::_1));
     } else {
-        service_.post(std::bind(&FileSampleSource::ReadBlock, self, boost::system::error_code()));
+        boost::asio::post(service_,
+                          std::bind(&FileSampleSource::ReadBlock, self, boost::system::error_code()));
     }
 }
 

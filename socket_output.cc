@@ -16,30 +16,34 @@ using boost::asio::ip::tcp;
 
 using namespace flightaware::uat;
 
-SocketOutput::SocketOutput(asio::io_service &service, tcp::socket &&socket) : strand_(service), socket_(std::move(socket)), peer_(socket_.remote_endpoint()), flush_pending_(false) {}
+SocketOutput::SocketOutput(asio::io_context &service, tcp::socket &&socket) : strand_(service), socket_(std::move(socket)), peer_(socket_.remote_endpoint()), flush_pending_(false) {}
 
 void SocketOutput::Start() { ReadAndDiscard(); }
 
 void SocketOutput::ReadAndDiscard() {
     auto self(shared_from_this());
     auto buf = std::make_shared<Bytes>(512);
-    socket_.async_read_some(asio::buffer(*buf), strand_.wrap([this, self, buf](const boost::system::error_code &ec, std::size_t len) {
+
+    auto completion = ([this, self, buf](const boost::system::error_code &ec, std::size_t len) {
         if (ec) {
             HandleError(ec);
         } else {
             ReadAndDiscard();
         }
-    }));
+    });
+    socket_.async_read_some(asio::buffer(*buf),
+                            boost::asio::bind_executor(strand_, completion));
 }
 
 void SocketOutput::Write(SharedMessageVector messages) {
     auto self(shared_from_this());
-    strand_.dispatch([this, self, messages]() {
-        if (IsOpen()) {
-            InternalWrite(messages);
-            Flush();
-        }
-    });
+    boost::asio::dispatch(strand_,
+                          [this, self, messages]() {
+                              if (IsOpen()) {
+                                  InternalWrite(messages);
+                                  Flush();
+                              }
+                          });
 }
 
 void SocketOutput::Flush() {
@@ -54,7 +58,7 @@ void SocketOutput::Flush() {
     outbuf_.str(std::string());
 
     auto self(shared_from_this());
-    async_write(socket_, boost::asio::buffer(*writebuf), strand_.wrap([this, self, writebuf](const boost::system::error_code &ec, size_t len) {
+    auto completion = ([this, self, writebuf](const boost::system::error_code &ec, size_t len) {
         flush_pending_ = false;
         if (ec) {
             HandleError(ec);
@@ -62,7 +66,10 @@ void SocketOutput::Flush() {
         }
 
         Flush(); // maybe some more data arrived
-    }));
+    });
+    async_write(socket_,
+                boost::asio::buffer(*writebuf),
+                boost::asio::bind_executor(strand_, completion));
 }
 
 void SocketOutput::HandleError(const boost::system::error_code &ec) {
@@ -108,7 +115,7 @@ void JsonOutput::InternalWrite(SharedMessageVector messages) {
 
 //////////////
 
-SocketListener::SocketListener(asio::io_service &service, const tcp::endpoint &endpoint, MessageDispatch &dispatch, ConnectionFactory factory) : service_(service), acceptor_(service), endpoint_(endpoint), socket_(service), dispatch_(dispatch), factory_(factory) {}
+SocketListener::SocketListener(asio::io_context &service, const tcp::endpoint &endpoint, MessageDispatch &dispatch, ConnectionFactory factory) : service_(service), acceptor_(service), endpoint_(endpoint), socket_(service), dispatch_(dispatch), factory_(factory) {}
 
 void SocketListener::Start() {
     acceptor_.open(endpoint_.protocol());

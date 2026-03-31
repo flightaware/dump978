@@ -34,7 +34,7 @@ enum class StratuxSerial::ParserState {
     MESSAGE   // reading rssi / timestamp / payload
 };
 
-StratuxSerial::StratuxSerial(boost::asio::io_service &io_service, const std::string &path) : path_(path), port_(io_service), read_timer_(io_service), parser_state_(ParserState::PREAMBLE), preamble_index_(0) {}
+StratuxSerial::StratuxSerial(boost::asio::io_context &io_context, const std::string &path) : path_(path), port_(io_context), read_timer_(io_context), parser_state_(ParserState::PREAMBLE), preamble_index_(0) {}
 
 void StratuxSerial::Start() {
     try {
@@ -95,7 +95,7 @@ void StratuxSerial::StartReading() {
             // little more data arrives, but at least we don't have to do a bunch of work on every one of
             // those)
             if (len < read_buffer_size * 3 / 4) {
-                read_timer_.expires_from_now(read_interval);
+                read_timer_.expires_after(read_interval);
                 read_timer_.async_wait([this, self](const boost::system::error_code &ec) {
                     if (!ec) {
                         StartReading();

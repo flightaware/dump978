@@ -42,7 +42,7 @@ void validate(boost::any &v, const std::vector<std::string> &values, connect_opt
 #define EXIT_NO_RESTART (64)
 
 static int realmain(int argc, char **argv) {
-    boost::asio::io_service io_service;
+    boost::asio::io_context io_context;
 
     // clang-format off
     po::options_description desc("Allowed options");
@@ -80,19 +80,19 @@ static int realmain(int argc, char **argv) {
     }
 
     auto connect = opts["connect"].as<connect_option>();
-    auto input = RawInput::Create(io_service, connect.host, connect.port);
-    auto reporter = Reporter::Create(io_service);
+    auto input = RawInput::Create(io_context, connect.host, connect.port);
+    auto reporter = Reporter::Create(io_context);
 
     input->SetConsumer(std::bind(&Reporter::HandleMessages, reporter, std::placeholders::_1));
-    input->SetErrorHandler([&io_service](const boost::system::error_code &ec) {
+    input->SetErrorHandler([&io_context](const boost::system::error_code &ec) {
         std::cerr << "Connection failed: " << ec.message() << std::endl;
-        io_service.stop();
+        io_context.stop();
     });
 
     reporter->Start();
     input->Start();
 
-    io_service.run();
+    io_context.run();
 
     input->Stop();
     reporter->Stop();

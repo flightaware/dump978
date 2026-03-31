@@ -2,7 +2,7 @@ Source: dump978-fa
 Section: embedded
 Priority: extra
 Maintainer: Oliver Jowett <oliver.jowett@flightaware.com>
-Build-Depends: debhelper(>=12), libboost-system-dev, libboost-program-options-dev, libboost-regex-dev, libboost-filesystem-dev, libsoapysdr-dev
+Build-Depends: debhelper(>=12), libboost-program-options-dev, libboost-regex-dev, libboost-filesystem-dev, libsoapysdr-dev
 Standards-Version: 3.9.3
 Homepage: http://www.flightaware.com/
 Vcs-Git: https://github.com/flightaware/dump978.git

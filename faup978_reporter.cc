@@ -9,6 +9,8 @@
 #include <iostream>
 #include <sstream>
 
+#include <boost/asio/bind_executor.hpp>
+
 using namespace flightaware::uat;
 using namespace flightaware::faup978;
 
@@ -59,8 +61,8 @@ void Reporter::PurgeOld() {
     }
 
     auto self(shared_from_this());
-    purge_timer_.expires_from_now(timeout_ / 4);
-    purge_timer_.async_wait(strand_.wrap([this, self](const boost::system::error_code &ec) {
+    purge_timer_.expires_after(timeout_ / 4);
+    purge_timer_.async_wait(boost::asio::bind_executor(strand_, [this, self](const boost::system::error_code &ec) {
         if (!ec) {
             PurgeOld();
         }
@@ -88,8 +90,8 @@ void Reporter::PeriodicReport() {
     }
 
     auto self(shared_from_this());
-    report_timer_.expires_from_now(interval_);
-    report_timer_.async_wait(strand_.wrap([this, self](const boost::system::error_code &ec) {
+    report_timer_.expires_after(interval_);
+    report_timer_.async_wait(boost::asio::bind_executor(strand_, [this, self](const boost::system::error_code &ec) {
         if (!ec) {
             PeriodicReport();
         }

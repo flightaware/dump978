@@ -12,7 +12,7 @@
 #include <functional>
 #include <memory>
 
-#include <boost/asio/io_service.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/posix/stream_descriptor.hpp>
 #include <boost/asio/serial_port.hpp>
 #include <boost/asio/steady_timer.hpp>
@@ -33,10 +33,10 @@ namespace flightaware {
         virtual void Start();
         virtual void Stop();
 
-        static Pointer Create(boost::asio::io_service &io_service, const std::string &path) { return Pointer(new StratuxSerial(io_service, path)); }
+        static Pointer Create(boost::asio::io_context &io_context, const std::string &path) { return Pointer(new StratuxSerial(io_context, path)); }
 
       protected:
-        StratuxSerial(boost::asio::io_service &io_service, const std::string &path);
+        StratuxSerial(boost::asio::io_context &io_context, const std::string &path);
 
       private:
         void StartReading();
