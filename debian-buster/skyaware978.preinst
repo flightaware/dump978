@@ -1,7 +1,0 @@
-#!/bin/sh
-set -e
-
-# Work around Debian bug #989155
-if [ "$1" = upgrade ] && [ -d /run/systemd/system ] ; then
-	deb-systemd-invoke stop 'skyaware978.service' >/dev/null || true
-fi
