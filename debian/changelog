@@ -1,4 +1,4 @@
-dump978-fa (11.0) UNRELEASED; urgency=medium
+dump978-fa (11.0) stable; urgency=medium
 
   * skyaware978: update aircraft DB to 2026-04-09
   * Add build support from trixie, remove buster support
