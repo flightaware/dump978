@@ -1,5 +1,6 @@
 dump978-fa (11.0) UNRELEASED; urgency=medium
 
+  * skyaware978: update aircraft DB to 2026-04-09
   * Add build support from trixie, remove buster support
   * Fix compilation on clang
   * Fix compilation against newer Boost versions
