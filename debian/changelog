@@ -1,6 +1,8 @@
 dump978-fa (11.0) UNRELEASED; urgency=medium
 
-  * in development
+  * Add build support from trixie, remove buster support
+  * Fix compilation on clang
+  * Fix compilation against newer Boost versions
 
  -- Oliver Jowett <oliver.jowett@flightaware.com>  Mon, 30 Mar 2026 20:46:17 +0800
 
