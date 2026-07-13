@@ -346,10 +346,15 @@ void AdaptiveGainControl::BurstEndOfWindow(unsigned counter) {
         // This window is loud, extend any existing run of loud windows
         ++burst_runlength_;
     } else {
-        // Quiet window. If we saw a run of loud windows >= 80us long, count
-        // that as a candidate for an over-amplified message that was
-        // not decoded.
-        if (burst_runlength_ >= 2 && burst_runlength_ <= 5)
+        // Quiet window. If we saw a run of loud windows about as long as a
+        // UAT downlink message, count that as a candidate for an
+        // over-amplified message that was not decoded. Downlink frames are
+        // 276 bits (short ADS-B) or 420 bits (long ADS-B) at 1.041667Mbps,
+        // i.e. ~265us or ~403us, spanning ~7 or ~11 windows of ~40us; accept
+        // runs of 5..13 windows (~200us..~520us). This excludes ground
+        // uplink frames (~4.2ms) and continuous interference. (dump1090 uses
+        // 2..5 windows here, matching Mode S message lengths of 64..120us.)
+        if (burst_runlength_ >= 5 && burst_runlength_ <= 13)
             ++burst_block_loud_undecoded_;
         burst_runlength_ = 0;
     }

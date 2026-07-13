@@ -77,13 +77,14 @@ static void FeedBlocks(AdaptiveGainControl::Pointer adaptive, const std::vector<
 
 static std::vector<std::uint16_t> ConstantSubblock(std::uint16_t magnitude) { return std::vector<std::uint16_t>(kSamplesPerSubblock, magnitude); }
 
-// A subblock containing repeated 3-window-long full-scale bursts separated by silence,
-// i.e. what an overloaded receiver failing to decode messages looks like
-static std::vector<std::uint16_t> BurstySubblock() {
+// A subblock containing repeated full-scale bursts of the given window count
+// separated by silence; at 8 windows (~320us), what an overloaded receiver
+// failing to decode UAT downlink messages looks like
+static std::vector<std::uint16_t> BurstySubblock(unsigned burst_windows = 8) {
     std::vector<std::uint16_t> subblock(kSamplesPerSubblock, 0);
     const unsigned period = kSamplesPerWindow * 40;
     for (unsigned i = 0; i < subblock.size(); ++i) {
-        if (i % period < kSamplesPerWindow * 3)
+        if (i % period < kSamplesPerWindow * burst_windows)
             subblock[i] = 65535;
     }
     return subblock;
@@ -170,6 +171,21 @@ static void TestBurstBackoffAndRecovery() {
     CHECK(fake->GetGainDb() > backed_off);
 }
 
+// Loud bursts much shorter than a UAT downlink message (e.g. DME pulses or
+// Mode S messages from the adjacent band) must not trigger a backoff.
+static void TestBurstWrongLength() {
+    std::fprintf(stderr, "--- TestBurstWrongLength\n");
+    auto fake = std::make_shared<FakeGainControl>();
+    AdaptiveParams params;
+    params.burst_control = true;
+    auto adaptive = AdaptiveGainControl::Create(params, fake, kTestRate);
+
+    FeedBlocks(adaptive, BurstySubblock(2), 40);
+
+    CHECK(fake->history.empty());
+    CHECK(fake->GetGainDb() > 49.0);
+}
+
 // The same bursts fed as successfully decoded messages must not trigger a backoff.
 static void TestBurstDecodedSkip() {
     std::fprintf(stderr, "--- TestBurstDecodedSkip\n");
@@ -211,6 +227,7 @@ int main(int argc, char **argv) {
     TestRangeQuiet();
     TestRangeScanDown();
     TestBurstBackoffAndRecovery();
+    TestBurstWrongLength();
     TestBurstDecodedSkip();
     TestUncontrollableSdr();
 

@@ -72,6 +72,11 @@ namespace flightaware {
 
         PhaseBuffer phase_;
         std::vector<std::uint16_t> mag16_;
+
+        // remainder of a decoded message clipped at the adaptive feed
+        // boundary, to be fed as decoded samples on the next call
+        std::size_t adaptive_carry_samples_ = 0;
+        double adaptive_carry_power_ = 0;
     };
   }; // namespace flightaware::uat
 };   // namespace flightaware

@@ -88,10 +88,10 @@ void SingleThreadReceiver::HandleSamples(std::uint64_t timestamp, Bytes::const_i
     // once we stop short of them here and pick them up next time; by then, any
     // message starting in that region has been demodulated, so decoded spans are
     // known when their samples are fed. Decoded message samples are fed with the
-    // message's mean power; everything else is fed as undecoded samples. Message
-    // samples clipped off at the feed boundary are fed as undecoded samples on the
-    // next call, which is benign (a run that long is ignored by burst detection,
-    // and the noise floor percentile is robust to it).
+    // message's mean power; everything else is fed as undecoded samples. A
+    // decoded message clipped at the feed boundary has its remaining samples
+    // carried over and fed as decoded samples on the next call, so that burst
+    // detection never sees part of a decoded message as an undecoded burst.
     if (adaptive_ && adaptive_->Enabled()) {
         const std::size_t tail = demodulator_->NumTrailingSamples();
         const std::size_t feed_end = ((std::size_t)total_samples > tail) ? (std::size_t)total_samples - tail : 0;
@@ -102,16 +102,31 @@ void SingleThreadReceiver::HandleSamples(std::uint64_t timestamp, Bytes::const_i
             converter_->ConvertMag16(samples_.begin(), samples_.begin() + feed_end * converter_->BytesPerSample(), mag16_.begin());
 
             std::size_t cursor = 0;
+            if (adaptive_carry_samples_ > 0) {
+                // remainder of a decoded message clipped at the previous feed
+                // boundary; it now sits at the start of the buffer
+                auto carry_end = std::min(adaptive_carry_samples_, feed_end);
+                adaptive_->Update(&mag16_[0], carry_end, &adaptive_carry_power_);
+                cursor = carry_end;
+                adaptive_carry_samples_ -= carry_end;
+            }
             for (const auto &span : decoded_spans) {
                 if (span.begin >= feed_end) {
                     break;
                 }
-                if (span.begin > cursor) {
-                    adaptive_->Update(&mag16_[cursor], span.begin - cursor, nullptr);
+                auto span_begin = std::max(span.begin, cursor);
+                if (span_begin > cursor) {
+                    adaptive_->Update(&mag16_[cursor], span_begin - cursor, nullptr);
                 }
                 auto span_end = std::min(span.end, feed_end);
-                adaptive_->Update(&mag16_[span.begin], span_end - span.begin, &span.power);
-                cursor = span_end;
+                if (span_end > span_begin) {
+                    adaptive_->Update(&mag16_[span_begin], span_end - span_begin, &span.power);
+                    cursor = span_end;
+                }
+                if (span.end > feed_end) {
+                    adaptive_carry_samples_ = span.end - feed_end;
+                    adaptive_carry_power_ = span.power;
+                }
             }
             if (cursor < feed_end) {
                 adaptive_->Update(&mag16_[cursor], feed_end - cursor, nullptr);
