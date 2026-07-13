@@ -12,6 +12,7 @@
 #include <iostream>
 #include <memory>
 
+#include "adaptive.h"
 #include "convert.h"
 #include "demodulator.h"
 #include "exception.h"
@@ -98,6 +99,23 @@ static int realmain(int argc, char **argv) {
         ("sdr-antenna", po::value<std::string>(), "set SDR antenna name")
         ("sdr-stream-settings", po::value<std::string>(), "set SDR stream key-value settings")
         ("sdr-device-settings", po::value<std::string>(), "set SDR device key-value settings")
+        ("adaptive-range", "enable adaptive gain management targeting a dynamic range")
+        ("adaptive-burst", "enable adaptive gain management based on detecting loud undecoded bursts")
+        ("adaptive-min-gain", po::value<double>(), "adaptive gain: never use gains below this, in dB")
+        ("adaptive-max-gain", po::value<double>(), "adaptive gain: never use gains above this, in dB")
+        ("adaptive-duty-cycle", po::value<double>(), "adaptive gain: fraction of samples to inspect, in percent (default: 50)")
+        ("adaptive-range-target", po::value<double>(), "adaptive gain: target dynamic range, in dB (default: auto)")
+        ("adaptive-range-alpha", po::value<double>(), "adaptive gain: noise floor smoothing factor, 0..1")
+        ("adaptive-range-percentile", po::value<unsigned>(), "adaptive gain: percentile of sample magnitude to use as the noise floor")
+        ("adaptive-range-change-delay", po::value<unsigned>(), "adaptive gain: seconds to wait after a gain change before acting on noise measurements")
+        ("adaptive-range-scan-delay", po::value<unsigned>(), "adaptive gain: seconds to wait before rescanning after an abortive dynamic range scan")
+        ("adaptive-range-rescan-delay", po::value<unsigned>(), "adaptive gain: seconds to wait between periodic scans for increased gain")
+        ("adaptive-burst-alpha", po::value<double>(), "adaptive gain: burst rate smoothing factor, 0..1")
+        ("adaptive-burst-change-delay", po::value<unsigned>(), "adaptive gain: seconds to wait after a gain change before acting on burst measurements")
+        ("adaptive-burst-loud-rate", po::value<double>(), "adaptive gain: decrease gain if the loud undecoded burst rate exceeds this rate (per second)")
+        ("adaptive-burst-loud-runlength", po::value<unsigned>(), "adaptive gain: decrease gain if the loud undecoded burst rate is exceeded for this many consecutive seconds")
+        ("adaptive-burst-quiet-rate", po::value<double>(), "adaptive gain: allow gain increases only if the loud decoded message rate is below this rate (per second)")
+        ("adaptive-burst-quiet-runlength", po::value<unsigned>(), "adaptive gain: allow gain increases only after the loud decoded message rate has been low for this many consecutive seconds")
         ("stratuxv3", po::value<std::string>(), "read messages from Stratux v3 UAT dongle on given serial port")
         ("raw-port", po::value<std::vector<listen_option>>(), "listen for connections on [host:]port and provide raw messages")
         ("raw-legacy-port", po::value<std::vector<listen_option>>(), "listen for connections on [host:]port and provide raw messages, with no initial metadata header")
@@ -128,6 +146,7 @@ static int realmain(int argc, char **argv) {
 
     MessageDispatch dispatch;
     SampleSource::Pointer sample_source;
+    std::shared_ptr<SoapySampleSource> soapy_source;
     MessageSource::Pointer message_source;
 
     tcp::resolver resolver(io_context);
@@ -137,6 +156,63 @@ static int realmain(int argc, char **argv) {
         return EXIT_NO_RESTART;
     }
 
+    // clang-format off
+    static const char *adaptive_option_names[] = {
+        "adaptive-range", "adaptive-burst", "adaptive-min-gain", "adaptive-max-gain", "adaptive-duty-cycle",
+        "adaptive-range-target", "adaptive-range-alpha", "adaptive-range-percentile",
+        "adaptive-range-change-delay", "adaptive-range-scan-delay", "adaptive-range-rescan-delay",
+        "adaptive-burst-alpha", "adaptive-burst-change-delay", "adaptive-burst-loud-rate",
+        "adaptive-burst-loud-runlength", "adaptive-burst-quiet-rate", "adaptive-burst-quiet-runlength"
+    };
+    // clang-format on
+
+    for (auto option : adaptive_option_names) {
+        if (opts.count(option) && !opts.count("sdr")) {
+            std::cerr << "--" << option << " can only be used with --sdr" << std::endl;
+            return EXIT_NO_RESTART;
+        }
+    }
+
+    AdaptiveParams adaptive_params;
+    adaptive_params.range_control = (opts.count("adaptive-range") > 0);
+    adaptive_params.burst_control = (opts.count("adaptive-burst") > 0);
+
+    if ((adaptive_params.range_control || adaptive_params.burst_control) && opts.count("sdr-auto-gain")) {
+        std::cerr << "--sdr-auto-gain cannot be combined with adaptive gain control" << std::endl;
+        return EXIT_NO_RESTART;
+    }
+
+    if (opts.count("adaptive-min-gain"))
+        adaptive_params.min_gain_db = opts["adaptive-min-gain"].as<double>();
+    if (opts.count("adaptive-max-gain"))
+        adaptive_params.max_gain_db = opts["adaptive-max-gain"].as<double>();
+    if (opts.count("adaptive-duty-cycle"))
+        adaptive_params.duty_cycle = opts["adaptive-duty-cycle"].as<double>() / 100.0;
+    if (opts.count("adaptive-range-target"))
+        adaptive_params.range_target = opts["adaptive-range-target"].as<double>();
+    if (opts.count("adaptive-range-alpha"))
+        adaptive_params.range_alpha = opts["adaptive-range-alpha"].as<double>();
+    if (opts.count("adaptive-range-percentile"))
+        adaptive_params.range_percentile = opts["adaptive-range-percentile"].as<unsigned>();
+    if (opts.count("adaptive-range-change-delay"))
+        adaptive_params.range_change_delay = opts["adaptive-range-change-delay"].as<unsigned>();
+    if (opts.count("adaptive-range-scan-delay"))
+        adaptive_params.range_scan_delay = opts["adaptive-range-scan-delay"].as<unsigned>();
+    if (opts.count("adaptive-range-rescan-delay"))
+        adaptive_params.range_rescan_delay = opts["adaptive-range-rescan-delay"].as<unsigned>();
+    if (opts.count("adaptive-burst-alpha"))
+        adaptive_params.burst_alpha = opts["adaptive-burst-alpha"].as<double>();
+    if (opts.count("adaptive-burst-change-delay"))
+        adaptive_params.burst_change_delay = opts["adaptive-burst-change-delay"].as<unsigned>();
+    if (opts.count("adaptive-burst-loud-rate"))
+        adaptive_params.burst_loud_rate = opts["adaptive-burst-loud-rate"].as<double>();
+    if (opts.count("adaptive-burst-loud-runlength"))
+        adaptive_params.burst_loud_runlength = opts["adaptive-burst-loud-runlength"].as<unsigned>();
+    if (opts.count("adaptive-burst-quiet-rate"))
+        adaptive_params.burst_quiet_rate = opts["adaptive-burst-quiet-rate"].as<double>();
+    if (opts.count("adaptive-burst-quiet-runlength"))
+        adaptive_params.burst_quiet_runlength = opts["adaptive-burst-quiet-runlength"].as<unsigned>();
+
     if (opts.count("stdin")) {
         sample_source = StdinSampleSource::Create(io_context, opts);
     } else if (opts.count("file")) {
@@ -144,7 +220,8 @@ static int realmain(int argc, char **argv) {
         sample_source = FileSampleSource::Create(io_context, path, opts);
     } else if (opts.count("sdr")) {
         auto device = opts["sdr"].as<std::string>();
-        sample_source = SoapySampleSource::Create(io_context, device, opts);
+        soapy_source = SoapySampleSource::Create(io_context, device, opts);
+        sample_source = soapy_source;
     } else if (opts.count("stratuxv3")) {
         auto path = opts["stratuxv3"].as<std::string>();
         message_source = StratuxSerial::Create(io_context, path);
@@ -239,7 +316,15 @@ static int realmain(int argc, char **argv) {
         sample_source->Init();
         auto format = sample_source->Format();
 
-        auto receiver = std::make_shared<SingleThreadReceiver>(format);
+        AdaptiveGainControl::Pointer adaptive;
+        if (soapy_source && (adaptive_params.range_control || adaptive_params.burst_control)) {
+            adaptive = AdaptiveGainControl::Create(adaptive_params, soapy_source, 2083333);
+            if (!adaptive->Enabled()) {
+                adaptive.reset();
+            }
+        }
+
+        auto receiver = std::make_shared<SingleThreadReceiver>(format, adaptive);
 
         sample_source->SetConsumer([receiver](std::uint64_t timestamp, const Bytes &buffer) { receiver->HandleSamples(timestamp, buffer.begin(), buffer.end()); });
 

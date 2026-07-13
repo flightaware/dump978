@@ -13,13 +13,14 @@
 
 #include <SoapySDR/Device.hpp>
 
+#include "adaptive.h"
 #include "sample_source.h"
 
 namespace flightaware {
   namespace uat {
-    class SoapySampleSource : public SampleSource {
+    class SoapySampleSource : public SampleSource, public SdrGainControl {
       public:
-        static SampleSource::Pointer Create(boost::asio::io_context &service, const std::string &device_name, const boost::program_options::variables_map &options) { return Pointer(new SoapySampleSource(service, device_name, options)); }
+        static std::shared_ptr<SoapySampleSource> Create(boost::asio::io_context &service, const std::string &device_name, const boost::program_options::variables_map &options) { return std::shared_ptr<SoapySampleSource>(new SoapySampleSource(service, device_name, options)); }
 
         virtual ~SoapySampleSource();
 
@@ -27,6 +28,11 @@ namespace flightaware {
         void Start() override;
         void Stop() override;
         SampleFormat Format() override { return format_; }
+
+        // SdrGainControl; valid only after Init()
+        double GetGainDb() override;
+        double SetGainDb(double db) override;
+        void GetGainLimits(double &min, double &max, double &step) override;
 
       private:
         SoapySampleSource(boost::asio::io_context &service, const std::string &device_name, const boost::program_options::variables_map &options);

@@ -10,6 +10,7 @@
 #include <functional>
 #include <vector>
 
+#include "adaptive.h"
 #include "common.h"
 #include "convert.h"
 #include "fec.h"
@@ -57,18 +58,20 @@ namespace flightaware {
 
     class SingleThreadReceiver : public Receiver {
       public:
-        SingleThreadReceiver(SampleFormat format);
+        SingleThreadReceiver(SampleFormat format, AdaptiveGainControl::Pointer adaptive = nullptr);
 
         void HandleSamples(std::uint64_t timestamp, Bytes::const_iterator begin, Bytes::const_iterator end) override;
 
       private:
         SampleConverter::Pointer converter_;
         std::unique_ptr<Demodulator> demodulator_;
+        AdaptiveGainControl::Pointer adaptive_;
 
         Bytes samples_;
         std::size_t saved_samples_ = 0;
 
         PhaseBuffer phase_;
+        std::vector<std::uint16_t> mag16_;
     };
   }; // namespace flightaware::uat
 };   // namespace flightaware

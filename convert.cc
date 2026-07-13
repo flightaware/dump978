@@ -32,6 +32,12 @@ static inline std::uint16_t scaled_atan(double x) {
 
 static inline double magsq(double i, double q) { return i * i + q * q; }
 
+// convert a magnitude-squared value (1.0 = full scale) to a uint16 magnitude (65536 = full scale, clamped)
+static inline std::uint16_t scaled_mag16(double msq) {
+    double mag = std::round(std::sqrt(msq) * 65536.0);
+    return mag > 65535 ? 65535 : (std::uint16_t)mag;
+}
+
 SampleConverter::Pointer SampleConverter::Create(SampleFormat format) {
     switch (format) {
     case SampleFormat::CU8:
@@ -60,6 +66,7 @@ CU8Converter::CU8Converter() : SampleConverter(SampleFormat::CU8) {
             u.iq[1] = q;
             lookup_phase_[u.iq16] = scaled_atan2(d_q, d_i);
             lookup_magsq_[u.iq16] = magsq(d_i, d_q);
+            lookup_mag16_[u.iq16] = scaled_mag16(lookup_magsq_[u.iq16]);
         }
     }
 }
@@ -110,6 +117,29 @@ void CU8Converter::ConvertMagSq(Bytes::const_iterator begin, Bytes::const_iterat
     }
 }
 
+void CU8Converter::ConvertMag16(Bytes::const_iterator begin, Bytes::const_iterator end, std::vector<std::uint16_t>::iterator out) {
+    const cu8_alias *in_iq = reinterpret_cast<const cu8_alias *>(&*begin);
+
+    // unroll the loop
+    const auto n = std::distance(begin, end) / 2;
+    const auto n8 = n / 8;
+    const auto n7 = n & 7;
+
+    for (auto i = 0; i < n8; ++i, in_iq += 8) {
+        *out++ = lookup_mag16_[in_iq[0].iq16];
+        *out++ = lookup_mag16_[in_iq[1].iq16];
+        *out++ = lookup_mag16_[in_iq[2].iq16];
+        *out++ = lookup_mag16_[in_iq[3].iq16];
+        *out++ = lookup_mag16_[in_iq[4].iq16];
+        *out++ = lookup_mag16_[in_iq[5].iq16];
+        *out++ = lookup_mag16_[in_iq[6].iq16];
+        *out++ = lookup_mag16_[in_iq[7].iq16];
+    }
+    for (auto i = 0; i < n7; ++i, ++in_iq) {
+        *out++ = lookup_mag16_[in_iq[0].iq16];
+    }
+}
+
 CS8Converter::CS8Converter() : SampleConverter(SampleFormat::CS8_) {
     cs8_alias u;
 
@@ -122,6 +152,7 @@ CS8Converter::CS8Converter() : SampleConverter(SampleFormat::CS8_) {
             u.iq[1] = q;
             lookup_phase_[u.iq16] = scaled_atan2(d_q, d_i);
             lookup_magsq_[u.iq16] = magsq(d_i, d_q);
+            lookup_mag16_[u.iq16] = scaled_mag16(lookup_magsq_[u.iq16]);
         }
     }
 }
@@ -169,6 +200,29 @@ void CS8Converter::ConvertMagSq(Bytes::const_iterator begin, Bytes::const_iterat
     }
     for (auto i = 0; i < n7; ++i, ++in_iq) {
         *out++ = lookup_magsq_[in_iq[0].iq16];
+    }
+}
+
+void CS8Converter::ConvertMag16(Bytes::const_iterator begin, Bytes::const_iterator end, std::vector<std::uint16_t>::iterator out) {
+    auto in_iq = reinterpret_cast<const cs8_alias *>(&*begin);
+
+    // unroll the loop
+    const auto n = std::distance(begin, end) / 2;
+    const auto n8 = n / 8;
+    const auto n7 = n & 7;
+
+    for (auto i = 0; i < n8; ++i, in_iq += 8) {
+        *out++ = lookup_mag16_[in_iq[0].iq16];
+        *out++ = lookup_mag16_[in_iq[1].iq16];
+        *out++ = lookup_mag16_[in_iq[2].iq16];
+        *out++ = lookup_mag16_[in_iq[3].iq16];
+        *out++ = lookup_mag16_[in_iq[4].iq16];
+        *out++ = lookup_mag16_[in_iq[5].iq16];
+        *out++ = lookup_mag16_[in_iq[6].iq16];
+        *out++ = lookup_mag16_[in_iq[7].iq16];
+    }
+    for (auto i = 0; i < n7; ++i, ++in_iq) {
+        *out++ = lookup_mag16_[in_iq[0].iq16];
     }
 }
 
@@ -269,6 +323,15 @@ void CS16HConverter::ConvertMagSq(Bytes::const_iterator begin, Bytes::const_iter
     }
 }
 
+void CS16HConverter::ConvertMag16(Bytes::const_iterator begin, Bytes::const_iterator end, std::vector<std::uint16_t>::iterator out) {
+    auto in_iq = reinterpret_cast<const std::int16_t *>(&*begin);
+
+    const auto n = std::distance(begin, end) / 4;
+    for (auto i = 0; i < n; ++i, in_iq += 2) {
+        *out++ = scaled_mag16(magsq(in_iq[1], in_iq[0]) / 32768.0 / 32768.0);
+    }
+}
+
 void CF32HConverter::ConvertPhase(Bytes::const_iterator begin, Bytes::const_iterator end, PhaseBuffer::iterator out) {
     auto in_iq = reinterpret_cast<const float *>(&*begin);
 
@@ -312,5 +375,14 @@ void CF32HConverter::ConvertMagSq(Bytes::const_iterator begin, Bytes::const_iter
     }
     for (auto i = 0; i < n7; ++i, in_iq += 2) {
         *out++ = magsq(in_iq[1], in_iq[0]);
+    }
+}
+
+void CF32HConverter::ConvertMag16(Bytes::const_iterator begin, Bytes::const_iterator end, std::vector<std::uint16_t>::iterator out) {
+    auto in_iq = reinterpret_cast<const float *>(&*begin);
+
+    const auto n = std::distance(begin, end) / 8;
+    for (auto i = 0; i < n; ++i, in_iq += 2) {
+        *out++ = scaled_mag16(magsq(in_iq[1], in_iq[0]));
     }
 }

@@ -11,7 +11,7 @@
 
 using namespace flightaware::uat;
 
-SingleThreadReceiver::SingleThreadReceiver(SampleFormat format) : converter_(SampleConverter::Create(format)), demodulator_(new TwoMegDemodulator()) {}
+SingleThreadReceiver::SingleThreadReceiver(SampleFormat format, AdaptiveGainControl::Pointer adaptive) : converter_(SampleConverter::Create(format)), demodulator_(new TwoMegDemodulator()), adaptive_(adaptive) {}
 
 // Handle samples in 'buffer' by:
 //   converting them to a phase buffer
@@ -44,6 +44,14 @@ void SingleThreadReceiver::HandleSamples(std::uint64_t timestamp, Bytes::const_i
     converter_->ConvertPhase(samples_.begin(), samples_.begin() + total_bytes, phase_.begin());
     auto messages = demodulator_->Demodulate(phase_.begin(), phase_.begin() + total_samples);
 
+    // decoded message extents & mean power, for the adaptive gain controller
+    struct DecodedSpan {
+        std::size_t begin;
+        std::size_t end;
+        double power;
+    };
+    std::vector<DecodedSpan> decoded_spans;
+
     if (!messages.empty()) {
         SharedMessageVector dispatch = std::make_shared<MessageVector>();
         dispatch->reserve(messages.size());
@@ -61,13 +69,54 @@ void SingleThreadReceiver::HandleSamples(std::uint64_t timestamp, Bytes::const_i
                 total_power += m;
             }
 
-            auto rssi = (total_power == 0 ? -1000 : 10 * std::log10(total_power / magsq.size()));
+            auto mean_power = total_power / magsq.size();
+            auto rssi = (total_power == 0 ? -1000 : 10 * std::log10(mean_power));
             std::uint64_t message_timestamp = timestamp - (1000 * previous_samples / 2083333) + (1000 * std::distance(phase_.cbegin(), message.begin) / 2083333);
 
             dispatch->emplace_back(std::move(message.payload), message_timestamp, message.corrected_errors, rssi);
+
+            if (adaptive_) {
+                decoded_spans.push_back(DecodedSpan{(std::size_t)std::distance(phase_.cbegin(), message.begin), (std::size_t)std::distance(phase_.cbegin(), message.end), mean_power});
+            }
         }
 
         DispatchMessages(dispatch);
+    }
+
+    // Feed sample magnitudes to the adaptive gain controller. The last tail_size
+    // samples are re-presented on the next call, so to feed every sample exactly
+    // once we stop short of them here and pick them up next time; by then, any
+    // message starting in that region has been demodulated, so decoded spans are
+    // known when their samples are fed. Decoded message samples are fed with the
+    // message's mean power; everything else is fed as undecoded samples. Message
+    // samples clipped off at the feed boundary are fed as undecoded samples on the
+    // next call, which is benign (a run that long is ignored by burst detection,
+    // and the noise floor percentile is robust to it).
+    if (adaptive_ && adaptive_->Enabled()) {
+        const std::size_t tail = demodulator_->NumTrailingSamples();
+        const std::size_t feed_end = ((std::size_t)total_samples > tail) ? (std::size_t)total_samples - tail : 0;
+        if (feed_end > 0) {
+            if (mag16_.size() < feed_end) {
+                mag16_.resize(feed_end);
+            }
+            converter_->ConvertMag16(samples_.begin(), samples_.begin() + feed_end * converter_->BytesPerSample(), mag16_.begin());
+
+            std::size_t cursor = 0;
+            for (const auto &span : decoded_spans) {
+                if (span.begin >= feed_end) {
+                    break;
+                }
+                if (span.begin > cursor) {
+                    adaptive_->Update(&mag16_[cursor], span.begin - cursor, nullptr);
+                }
+                auto span_end = std::min(span.end, feed_end);
+                adaptive_->Update(&mag16_[span.begin], span_end - span.begin, &span.power);
+                cursor = span_end;
+            }
+            if (cursor < feed_end) {
+                adaptive_->Update(&mag16_[cursor], feed_end - cursor, nullptr);
+            }
+        }
     }
 
     // preserve the tail of the sample buffer for next time
