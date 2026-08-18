@@ -57,6 +57,12 @@ namespace flightaware {
         // samples (trailing partial samples are ignored, not buffered).
         virtual void ConvertMagSq(Bytes::const_iterator begin, Bytes::const_iterator end, std::vector<double>::iterator out) = 0;
 
+        // Read samples from `begin` .. `end` and write one uint16 magnitude value
+        // per sample to `out` (65536 = full scale, clamped to 65535). The input
+        // buffer should contain an integral number of samples (trailing partial
+        // samples are ignored, not buffered).
+        virtual void ConvertMag16(Bytes::const_iterator begin, Bytes::const_iterator end, std::vector<std::uint16_t>::iterator out) = 0;
+
         SampleFormat Format() const { return format_; }
         unsigned BytesPerSample() const { return bytes_per_sample_; }
 
@@ -74,6 +80,7 @@ namespace flightaware {
 
         void ConvertPhase(Bytes::const_iterator begin, Bytes::const_iterator end, PhaseBuffer::iterator out) override;
         void ConvertMagSq(Bytes::const_iterator begin, Bytes::const_iterator end, std::vector<double>::iterator out) override;
+        void ConvertMag16(Bytes::const_iterator begin, Bytes::const_iterator end, std::vector<std::uint16_t>::iterator out) override;
 
       private:
         union cu8_alias {
@@ -83,6 +90,7 @@ namespace flightaware {
 
         std::array<std::uint16_t, 65536> lookup_phase_;
         std::array<double, 65536> lookup_magsq_;
+        std::array<std::uint16_t, 65536> lookup_mag16_;
     };
 
     class CS8Converter : public SampleConverter {
@@ -91,6 +99,7 @@ namespace flightaware {
 
         void ConvertPhase(Bytes::const_iterator begin, Bytes::const_iterator end, PhaseBuffer::iterator out) override;
         void ConvertMagSq(Bytes::const_iterator begin, Bytes::const_iterator end, std::vector<double>::iterator out) override;
+        void ConvertMag16(Bytes::const_iterator begin, Bytes::const_iterator end, std::vector<std::uint16_t>::iterator out) override;
 
       private:
         union cs8_alias {
@@ -100,6 +109,7 @@ namespace flightaware {
 
         std::array<std::uint16_t, 65536> lookup_phase_;
         std::array<double, 65536> lookup_magsq_;
+        std::array<std::uint16_t, 65536> lookup_mag16_;
     };
 
     class CS16HConverter : public SampleConverter {
@@ -107,6 +117,7 @@ namespace flightaware {
         CS16HConverter();
         void ConvertPhase(Bytes::const_iterator begin, Bytes::const_iterator end, PhaseBuffer::iterator out) override;
         void ConvertMagSq(Bytes::const_iterator begin, Bytes::const_iterator end, std::vector<double>::iterator out) override;
+        void ConvertMag16(Bytes::const_iterator begin, Bytes::const_iterator end, std::vector<std::uint16_t>::iterator out) override;
 
       private:
         std::uint16_t TableAtan(std::uint32_t r);
@@ -119,6 +130,7 @@ namespace flightaware {
         CF32HConverter() : SampleConverter(SampleFormat::CF32H) {}
         void ConvertPhase(Bytes::const_iterator begin, Bytes::const_iterator end, PhaseBuffer::iterator out) override;
         void ConvertMagSq(Bytes::const_iterator begin, Bytes::const_iterator end, std::vector<double>::iterator out) override;
+        void ConvertMag16(Bytes::const_iterator begin, Bytes::const_iterator end, std::vector<std::uint16_t>::iterator out) override;
     };
   }; // namespace flightaware::uat
 };   // namespace flightaware

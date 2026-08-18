@@ -14,7 +14,7 @@ LIBS_SDR=-lSoapySDR
 
 all: dump978-fa skyaware978
 
-dump978-fa: dump978_main.o socket_output.o message_dispatch.o fec.o libs/fec/init_rs_char.o libs/fec/decode_rs_char.o sample_source.o soapy_source.o convert.o demodulator.o uat_message.o stratux_serial.o
+dump978-fa: dump978_main.o socket_output.o message_dispatch.o fec.o libs/fec/init_rs_char.o libs/fec/decode_rs_char.o sample_source.o soapy_source.o convert.o demodulator.o uat_message.o stratux_serial.o adaptive.o
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ -o $@ $(LIBS) $(LIBS_SDR)
 
 faup978: faup978_main.o socket_input.o uat_message.o track.o faup978_reporter.o
@@ -23,14 +23,18 @@ faup978: faup978_main.o socket_input.o uat_message.o track.o faup978_reporter.o
 skyaware978: skyaware978_main.o socket_input.o uat_message.o track.o skyaware_writer.o
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ -o $@ $(LIBS)
 
-test: fec_tests
+test: fec_tests adaptive_tests
 	./fec_tests
+	./adaptive_tests
 
 fec_tests: fec_tests.o libs/fec/init_rs_char.o libs/fec/decode_rs_char.o libs/fec/encode_rs_char.o
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ -o $@ -lstdc++
+
+adaptive_tests: adaptive_tests.o adaptive.o
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ -o $@ -lstdc++ -lm
 
 format:
 	clang-format -style=file -i *.cc *.h
 
 clean:
-	rm -f *.o libs/fec/*.o dump978-fa faup978 skyaware978 fec_tests
+	rm -f *.o libs/fec/*.o dump978-fa faup978 skyaware978 fec_tests adaptive_tests

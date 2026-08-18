@@ -150,6 +150,20 @@ SoapySampleSource::SoapySampleSource(boost::asio::io_context &service, const std
 
 SoapySampleSource::~SoapySampleSource() { Stop(); }
 
+double SoapySampleSource::GetGainDb() { return device_->getGain(SOAPY_SDR_RX, 0); }
+
+double SoapySampleSource::SetGainDb(double db) {
+    device_->setGain(SOAPY_SDR_RX, 0, db);
+    return device_->getGain(SOAPY_SDR_RX, 0);
+}
+
+void SoapySampleSource::GetGainLimits(double &min, double &max, double &step) {
+    auto range = device_->getGainRange(SOAPY_SDR_RX, 0);
+    min = range.minimum();
+    max = range.maximum();
+    step = range.step();
+}
+
 void SoapySampleSource::Init() {
     try {
         void (*unmake)(SoapySDR::Device *) = &SoapySDR::Device::unmake; // select the right overload

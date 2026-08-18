@@ -65,6 +65,39 @@ The main options are:
 
 Pass `--help` for a full list of options.
 
+## Adaptive gain control
+
+When receiving samples from an SDR (`--sdr` only), dump978-fa can adjust the
+SDR gain automatically. This is a port of
+[dump1090-fa's adaptive gain feature](https://github.com/flightaware/dump1090/blob/master/README.adaptive-gain.md)
+and works the same way. Two independent modes are available; both are off by
+default and can be enabled together:
+
+ * `--adaptive-range` enables **dynamic range mode**: dump978 measures the
+   noise floor and searches for the highest gain that still provides a target
+   dynamic range (by default, 60% of the SDR's gain range in dB -
+   approximately 30dB for an RTLSDR). This suits most installs.
+ * `--adaptive-burst` enables **burst mode**: dump978 watches for loud,
+   message-length bursts of signal that failed to decode - a sign that a
+   nearby transmitter is overloading the receiver - and reduces gain when
+   they arrive too often, raising it again once things quieten down.
+
+Useful tuning options:
+
+ * `--adaptive-min-gain <dB>` / `--adaptive-max-gain <dB>` restrict the gain
+   range that adaptive gain control will use. If you know an approximately
+   correct gain for your installation, setting limits around it speeds up
+   convergence.
+ * `--adaptive-duty-cycle <percent>` controls the fraction of received
+   samples inspected (default: 50). Lower values reduce CPU use on slow
+   machines at a small cost in measurement accuracy.
+ * `--adaptive-range-target <dB>` overrides the target dynamic range.
+
+Further tunables mirroring dump1090-fa's options are available; pass `--help`
+for the full list. Adaptive gain control requires manual gain control of the
+SDR and cannot be combined with `--sdr-auto-gain`. Gain changes and a
+once-a-minute status line are logged to stderr.
+
 ## Third-party code
 
 Third-party source code included in libs/:
